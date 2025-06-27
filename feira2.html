@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="pt">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LETS GO BURGUER - Sistema de Gestão</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    :root {
+      --primary: #e74c3c;
+      --secondary: #c0392b;
+      --dark: #333;
+      --light: #f4f4f4;
+      --success: #2ecc71;
+      --warning: #f39c12;
+    }
+    
+    body {
+      background: var(--light);
+      color: var(--dark);
+    }
+    
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+    }
+    
+    input, select, button, textarea {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    
+    button {
+      background: var(--primary);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s;
+    }
+    
+    button:hover {
+      background: var(--secondary);
+    }
+    
+    button.secondary {
+      background: var(--light);
+      color: var(--dark);
+    }
+    
+    button.secondary:hover {
+      background: #ddd;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    
+    th {
+      background: var(--primary);
+      color: white;
+    }
+    
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .alert {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .alert-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .tab-container {
+      margin: 20px 0;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    
+    .tab-button {
+      padding: 10px 20px;
+      background: #ddd;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .tab-button.active {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      td {
+        padding-left: 50%;
+        position: relative;
+      }
+      
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        text-align: left;
+        font-weight: bold;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LETS GO BURGUER - Sistema de Gestão</h1>
+  </header>
+
+  <!-- Login -->
+  <div id="login" class="container">
+    <h2>Login Da Recepção - Administrador</h2>
+    <div id="loginAlert" class="alert hidden"></div>
+    <input type="text" id="username" placeholder="Usuário" required>
+    <input type="password" id="password" placeholder="Senha" required>
+    <button onclick="fazerLogin()">Entrar</button>
+  </div>
+
+  <!-- Sistema Principal -->
+  <div id="sistema" class="hidden">
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <button class="tab-button active" onclick="openTab('vendas')">Vendas</button>
+        <button class="tab-button" onclick="openTab('estoque')">Estoque</button>
+        <button class="tab-button" onclick="openTab('relatorios')">Relatórios</button>
+        <button class="tab-button" onclick="openTab('config')">Configurações</button>
+        <button class="tab-button secondary" onclick="logout()">Sair</button>
+      </div>
+
+      <!-- Aba de Vendas -->
+      <div id="vendas" class="tab-content active">
+        <div class="container">
+          <h2>Registrar Venda</h2>
+          <div class="grid">
+            <div>
+              <input type="text" id="cliente" placeholder="Nome do Cliente" list="clientes">
+              <datalist id="clientes"></datalist>
+              <select id="produto">
+                <option value="">Selecione um produto</option>
+                <option value="Hamburguer(Bega)-1500">Hamburguer(Bega) - 1500 Kz</option>
+                <option value="Tostas-800">Totas - 800 Kz</option>
+                <option value="Jogos-100">Jogos - 100 Kz</option>
+                <option value="Cocktail-250">Cocktail - 250 Kz</option>
+                <option value="Mocktail-200">Mocktail - 200 Kz</option>
+              </select>
+              <input type="number" id="quantidade" value="1" min="1">
+              <select id="pagamento">
+                <option value="Cash">Cash</option>
+                <option value="Express">Express</option>
+                <option value="Transferência">Transferência</option>
+              </select>
+              <textarea id="observacao" placeholder="Observações (opcional)"></textarea>
+              <button onclick="registrarVenda()">Registrar Venda</button>
+            </div>
+            <div>
+              <h3>Resumo da Venda</h3>
+              <div id="resumoVenda"></div>
+              <div class="total" id="totalVenda">Total: 0 Kz</div>
+            </div>
+          </div>
+
+          <h2>Histórico de Vendas</h2>
+          <input type="text" id="filtroVendas" placeholder="Filtrar por cliente ou produto..." oninput="filtrarVendas()">
+          <table id="tabela-vendas">
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Cliente</th>
+                <th>Produto</th>
+                <th>Qtd</th>
+                <th>Preço</th>
+                <th>Total</th>
+                <th>Pagamento</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="total" id="faturamentoTotal">Faturamento Total: 0 Kz</div>
+          <button onclick="exportarParaExcel()" class="secondary">Exportar para Excel</button>
+          <button onclick="imprimirRelatorioDiario()">Imprimir Relatório Diário</button>
+        </div>
+      </div>
+
+      <!-- Aba de Estoque -->
+      <div id="estoque" class="tab-content">
+        <div class="container">
+          <h2>Gestão de Estoque</h2>
+          <div class="grid">
+            <div>
+              <h3>Adicionar Item</h3>
+              <input type="text" id="itemNome" placeholder="Nome do Item">
+              <input type="number" id="itemQuantidade" placeholder="Quantidade" min="0">
+              <input type="number" id="itemAlerta" placeholder="Nível de Alerta" min="0">
+              <button onclick="adicionarItemEstoque()">Adicionar</button>
+            </div>
+            <div>
+              <h3>Atualizar Estoque</h3>
+              <select id="estoqueItem">
+                <option value="">Selecione um item</option>
+              </select>
+              <input type="number" id="estoqueQuantidade" placeholder="Quantidade" min="0">
+              <button onclick="atualizarEstoque()">Atualizar</button>
+            </div>
+          </div>
+
+          <h3>Itens em Estoque</h3>
+          <table id="tabela-estoque">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantidade</th>
+                <th>Nível de Alerta</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Aba de Relatórios -->
+      <div id="relatorios" class="tab-content">
+        <div class="container">
+          <h2>Relatórios e Análises</h2>
+          <div class="grid">
+            <div class="card">
+              <h3>Vendas por Período</h3>
+              <canvas id="vendasChart"></canvas>
+            </div>
+            <div class="card">
+              <h3>Produtos Mais Vendidos</h3>
+              <canvas id="produtosChart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Métodos de Pagamento</h3>
+            <canvas id="pagamentosChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba de Configurações -->
+      <div id="config" class="tab-content">
+        <div class="container">
+          <h2>Configurações do Sistema</h2>
+          <div class="grid">
+            <div>
+              <h3>Alterar Senha</h3>
+              <input type="password" id="senhaAtual" placeholder="Senha Atual">
+              <input type="password" id="novaSenha" placeholder="Nova Senha">
+              <input type="password" id="confirmaSenha" placeholder="Confirmar Nova Senha">
+              <button onclick="alterarSenha()">Alterar Senha</button>
+            </div>
+            <div>
+              <h3>Backup</h3>
+              <button onclick="fazerBackup()">Fazer Backup</button>
+              <button onclick="restaurarBackup()" class="secondary">Restaurar Backup</button>
+              <input type="file" id="backupFile" accept=".json" style="display: none;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Dados do sistema
+    let vendas = [];
+    let estoque = [];
+    let usuarios = [
+      { username: "admin", password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" } // senha: admin (SHA-256)
+    ];
+    let loginAttempts = 0;
+    let charts = {};
+
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', function() {
+      carregarDados();
+      atualizarClientes();
+      atualizarItensEstoque();
+    });
+
+    // Funções de Login
+    function fazerLogin() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const loginAlert = document.getElementById('loginAlert');
+      
+      if (loginAttempts >= 3) {
+        loginAlert.textContent = "Muitas tentativas. Tente novamente mais tarde.";
+        loginAlert.className = "alert alert-error";
+        loginAlert.classList.remove('hidden');
+        return;
+      }
+      
+      const user = usuarios.find(u => u.username === username);
+      const hashedPassword = hashPassword(password);
+      
+      if (user && user.password === hashedPassword) {
+        document.getElementById('login').classList.add('hidden');
+        document.getElementById('sistema').classList.remove('hidden');
+        loginAttempts = 0;
+      } else {
+        loginAttempts++;
+        loginAlert.textContent = `Login inválido. Tentativas restantes: ${3 - loginAttempts}`;
+        loginAlert.className = "alert alert-error";
+        loginAlert.classList.remove('hidden');
+      }
+    }
+    
+    function hashPassword(password) {
+      // Simulação de hash SHA-256 (em produção, usar biblioteca adequada)
+      return CryptoJS.SHA256(password).toString();
+    }
+    
+    function logout() {
+      document.getElementById('login').classList.remove('hidden');
+      document.getElementById('sistema').classList.add('hidden');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+    }
+
+    // Funções de Vendas
+    function registrarVenda() {
+      const cliente = document.getElementById('cliente').value.trim();
+      const produtoInfo = document.getElementById('produto').value.split('-');
+      const quantidade = parseInt(document.getElementById('quantidade').value);
+      const pagamento = document.getElementById('pagamento').value;
+      const observacao = document.getElementById('observacao').value;
+      const agora = new Date();
+      
+      if (!cliente || !produtoInfo[0] || quantidade <= 0) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+      }
+      
+      const venda = {
+        id: Date.now(),
+        data: agora.toISOString(),
+        cliente,
+        produto: produtoInfo[0],
+        precoUnitario: parseInt(produtoInfo[1]),
+        quantidade,
+        total: parseInt(produtoInfo[1]) * quantidade,
+        pagamento,
+        observacao,
+        hora: agora.toLocaleTimeString(),
+        dataFormatada: agora.toLocaleDateString('pt-PT')
+      };
+      
+      vendas.push(venda);
+      salvarDados();
+      atualizarTabelaVendas();
+      atualizarResumoVenda();
+      atualizarClientes();
+      
+      // Limpar campos
+      document.getElementById('quantidade').value = 1;
+      document.getElementById('observacao').value = '';
+    }
+    
+    function excluirVenda(id) {
+      if (confirm("Deseja realmente excluir esta venda?")) {
+        vendas = vendas.filter(v => v.id !== id);
+        salvarDados();
+        atualizarTabelaVendas();
+      }
+    }
+    
+    function atualizarTabelaVendas() {
+      const tabela = document.querySelector('#tabela-vendas tbody');
+      tabela.innerHTML = '';
+      let total = 0;
+      
+      vendas.forEach(v => {
+        total += v.total;
+        tabela.innerHTML += `
+          <tr>
+            <td data-label="Data/Hora">${v.dataFormatada} ${v.hora}</td>
+            <td data-label="Cliente">${v.cliente}</td>
+            <td data-label="Produto">${v.produto}</td>
+            <td data-label="Qtd">${v.quantidade}</td>
+            <td data-label="Preço">${v.precoUnitario} Kz</td>
+            <td data-label="Total">${v.total} Kz</td>
+            <td data-label="Pagamento">${v.pagamento}</td>
+            <td data-label="Ações">
+              <button onclick="excluirVenda(${v.id})" class="secondary">Excluir</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      document.getElementById('faturamentoTotal').textContent = `Faturamento Total: ${total} Kz`;
+    }
+    
+    function filtrarVendas() {
+      const filtro = document.getElementById('filtroVendas').value.toLowerCase();
+      const linhas = document.querySelectorAll('#tabela-vendas tbody tr');
+      
+      linhas.forEach(linha => {
+        const textoLinha = linha.textContent.toLowerCase();
+        linha.style.display = textoLinha.includes(filtro) ? '' : 'none';
+      });
+    }
+    
+    function atualizarResumoVenda() {
+      const produto = document.getElementById('produto').value;
+      const quantidade = document.getElementById('quantidade').value;
+      
+      if (produto) {
+        const produtoInfo = produto.split('-');
+        const total = parseInt(produtoInfo[1]) * parseInt(quantidade);
+        
+        document.getElementById('resumoVenda').innerHTML = `
+          <p><strong>Produto:</strong> ${produtoInfo[0]}</p>
+          <p><strong>Quantidade:</strong> ${quantidade}</p>
+          <p><strong>Preço Unitário:</strong> ${produtoInfo[1]} Kz</p>
+        `;
+        
+        document.getElementById('totalVenda').textContent = `Total: ${total} Kz`;
+      }
+    }
+    
+    // Funções de Estoque
+    function adicionarItemEstoque() {
+      const nome = document.getElementById('itemNome').value.trim();
+      const quantidade = parseInt(document.getElementById('itemQuantidade').value);
+      const alerta = parseInt(document.getElementById('itemAlerta').value);
+      
+      if (!nome || isNaN(quantidade) || isNaN(alerta)) {
+        alert("Preencha todos os campos corretamente.");
+        return;
+      }
+      
+      estoque.push({
+        id: Date.now(),
+        nome,
+        quantidade,
+        alerta
+      });
+      
+      salvarDados();
+      atualizarItensEstoque();
+      document.getElementById('itemNome').value = '';
+      document.getElementById('itemQuantidade').value = '';
+      document.getElementById('itemAlerta').value = '';
+    }
+    
+    function atualizarEstoque() {
+      const itemId = parseInt(document.getElementById('estoqueItem').value);
+      const quantidade = parseInt(document.getElementById('estoqueQuantidade').value);
+      
+      if (!itemId || isNaN(quantidade)) {
+        alert("Selecione um item e informe a quantidade.");
+        return;
+      }
+      
+      const item = estoque.find(i => i.id === itemId);
+      if (item) {
+        item.quantidade = quantidade;
+        salvarDados();
+        atualizarItensEstoque();
+        document.getElementById('estoqueQuantidade').value = '';
+      }
+    }
+    
+    function atualizarItensEstoque() {
+      const select = document.getElementById('estoqueItem');
+      const tabela = document.querySelector('#tabela-estoque tbody');
+      
+      select.innerHTML = '<option value="">Selecione um item</option>';
+      tabela.innerHTML = '';
+      
+      estoque.forEach(item => {
+        // Atualizar select
+        select.innerHTML += `<option value="${item.id}">${item.nome}</option>`;
+        
+        // Atualizar tabela
+        const status = item.quantidade <= item.alerta ? 
+          `<span style="color: red;">ESTOQUE BAIXO</span>` : 
+          `<span style="color: green;">OK</span>`;
+        
+        tabela.innerHTML += `
+          <tr>
+            <td data-label="Item">${item.nome}</td>
+            <td data-label="Quantidade">${item.quantidade}</td>
+            <td data-label="Alerta">${item.alerta}</td>
+            <td data-label="Status">${status}</td>
+            <td data-label="Ações">
+              <button onclick="removerItemEstoque(${item.id})" class="secondary">Remover</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+    
+    function removerItemEstoque(id) {
+      if (confirm("Deseja realmente remover este item do estoque?")) {
+        estoque = estoque.filter(i => i.id !== id);
+        salvarDados();
+        atualizarItensEstoque();
+      }
+    }
+    
+    // Funções de Relatórios
+    function gerarRelatorios() {
+      // Vendas por dia (últimos 7 dias)
+      const datas = [];
+      const valores = [];
+      
+      for (let i = 6; i >= 0; i--) {
+        const data = new Date();
+        data.setDate(data.getDate() - i);
+        const dataStr = data.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' });
+        
+        const totalDia = vendas
+          .filter(v => new Date(v.data).toDateString() === data.toDateString())
+          .reduce((sum, v) => sum + v.total, 0);
+        
+        datas.push(dataStr);
+        valores.push(totalDia);
+      }
+      
+      if (charts.vendasChart) charts.vendasChart.destroy();
+      charts.vendasChart = new Chart(
+        document.getElementById('vendasChart'),
+        {
+          type: 'bar',
+          data: {
+            labels: datas,
+            datasets: [{
+              label: 'Vendas (Kz)',
+              data: valores,
+              backgroundColor: 'rgba(231, 76, 60, 0.7)'
+            }]
+          }
+        }
+      );
+      
+      // Produtos mais vendidos
+      const produtosMap = {};
+      vendas.forEach(v => {
+        produtosMap[v.produto] = (produtosMap[v.produto] || 0) + v.quantidade;
+      });
+      
+      const produtos = Object.keys(produtosMap).sort((a, b) => produtosMap[b] - produtosMap[a]).slice(0, 5);
+      const quantidades = produtos.map(p => produtosMap[p]);
+      
+      if (charts.produtosChart) charts.produtosChart.destroy();
+      charts.produtosChart = new Chart(
+        document.getElementById('produtosChart'),
+        {
+          type: 'pie',
+          data: {
+            labels: produtos,
+            datasets: [{
+              data: quantidades,
+              backgroundColor: [
+                'rgba(231, 76, 60, 0.7)',
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(155, 89, 182, 0.7)',
+                'rgba(241, 196, 15, 0.7)'
+              ]
+            }]
+          }
+        }
+      );
+      
+      // Métodos de pagamento
+      const pagamentosMap = {};
+      vendas.forEach(v => {
+        pagamentosMap[v.pagamento] = (pagamentosMap[v.pagamento] || 0) + 1;
+      });
+      
+      const pagamentos = Object.keys(pagamentosMap);
+      const contagens = pagamentos.map(p => pagamentosMap[p]);
+      
+      if (charts.pagamentosChart) charts.pagamentosChart.destroy();
+      charts.pagamentosChart = new Chart(
+        document.getElementById('pagamentosChart'),
+        {
+          type: 'doughnut',
+          data: {
+            labels: pagamentos,
+            datasets: [{
+              data: contagens,
+              backgroundColor: [
+                'rgba(231, 76, 60, 0.7)',
+                'rgba(52, 152, 219, 0.7)',
+                'rgba(46, 204, 113, 0.7)'
+              ]
+            }]
+          }
+        }
+      );
+    }
+    
+    // Funções de Clientes
+    function atualizarClientes() {
+      const clientes = [...new Set(vendas.map(v => v.cliente))];
+      const datalist = document.getElementById('clientes');
+      datalist.innerHTML = '';
+      
+      clientes.forEach(cliente => {
+        datalist.innerHTML += `<option value="${cliente}">`;
+      });
+    }
+    
+    // Funções de Backup
+    function fazerBackup() {
+      const dados = {
+        vendas,
+        estoque,
+        usuarios,
+        dataBackup: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(dados)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_letsgo_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    function restaurarBackup() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = event => {
+          try {
+            const dados = JSON.parse(event.target.result);
+            
+            if (confirm(`Deseja restaurar backup de ${dados.dataBackup}? Todos os dados atuais serão substituídos.`)) {
+              vendas = dados.vendas || [];
+              estoque = dados.estoque || [];
+              usuarios = dados.usuarios || [];
+              
+              salvarDados();
+              carregarDados();
+              alert("Backup restaurado com sucesso!");
+            }
+          } catch (error) {
+            alert("Erro ao ler arquivo de backup.");
+          }
+        };
+        
+        reader.readAsText(file);
+      };
+      
+      input.click();
+    }
+    
+    // Funções de Configurações
+    function alterarSenha() {
+      const senhaAtual = document.getElementById('senhaAtual').value;
+      const novaSenha = document.getElementById('novaSenha').value;
+      const confirmaSenha = document.getElementById('confirmaSenha').value;
+      
+      if (!senhaAtual || !novaSenha || !confirmaSenha) {
+        alert("Preencha todos os campos.");
+        return;
+      }
+      
+      if (novaSenha !== confirmaSenha) {
+        alert("As novas senhas não coincidem.");
+        return;
+      }
+      
+      const usuarioAtual = usuarios[0]; // Simplificação - em produção gerenciar múltiplos usuários
+      
+      if (hashPassword(senhaAtual) !== usuarioAtual.password) {
+        alert("Senha atual incorreta.");
+        return;
+      }
+      
+      usuarioAtual.password = hashPassword(novaSenha);
+      salvarDados();
+      
+      alert("Senha alterada com sucesso!");
+      document.getElementById('senhaAtual').value = '';
+      document.getElementById('novaSenha').value = '';
+      document.getElementById('confirmaSenha').value = '';
+    }
+    
+    // Funções de Exportação
+    function exportarParaExcel() {
+      let csv = 'Data,Hora,Cliente,Produto,Quantidade,Preço Unitário,Total,Método Pagamento,Observações\n';
+      
+      vendas.forEach(v => {
+        csv += `"${v.dataFormatada}","${v.hora}","${v.cliente}","${v.produto}",${v.quantidade},${v.precoUnitario},${v.total},"${v.pagamento}","${v.observacao || ''}"\n`;
+      });
+      
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vendas_letsgo_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    
+    function imprimirRelatorioDiario() {
+      const hoje = new Date().toLocaleDateString('pt-PT');
+      const vendasHoje = vendas.filter(v => v.dataFormatada === hoje);
+      const totalHoje = vendasHoje.reduce((sum, v) => sum + v.total, 0);
+      
+      let html = `
+        <style>
+          body { font-family: Arial; margin: 20px; }
+          h1, h2 { text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .total { font-weight: bold; text-align: right; }
+        </style>
+        <h1>LETS GO BURGUER</h1>
+        <h2>Relatório Diário - ${hoje}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Cliente</th>
+              <th>Produto</th>
+              <th>Qtd</th>
+              <th>Preço</th>
+              <th>Total</th>
+              <th>Pagamento</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      vendasHoje.forEach(v => {
+        html += `
+          <tr>
+            <td>${v.hora}</td>
+            <td>${v.cliente}</td>
+            <td>${v.produto}</td>
+            <td>${v.quantidade}</td>
+            <td>${v.precoUnitario} Kz</td>
+            <td>${v.total} Kz</td>
+            <td>${v.pagamento}</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+          </tbody>
+        </table>
+        <div class="total">Total do Dia: ${totalHoje} Kz</div>
+      `;
+      
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }
+    
+    // Funções de Tabs
+    function openTab(tabName) {
+      // Esconder todos os conteúdos de tab
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Desativar todos os botões de tab
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+      });
+      
+      // Ativar tab selecionada
+      document.getElementById(tabName).classList.add('active');
+      document.querySelector(`.tab-button[onclick="openTab('${tabName}')"]`).classList.add('active');
+      
+      // Se for a tab de relatórios, gerar os gráficos
+      if (tabName === 'relatorios') {
+        gerarRelatorios();
+      }
+    }
+    
+    // Funções de Persistência
+    function salvarDados() {
+      localStorage.setItem('letsgo_vendas', JSON.stringify(vendas));
+      localStorage.setItem('letsgo_estoque', JSON.stringify(estoque));
+      localStorage.setItem('letsgo_usuarios', JSON.stringify(usuarios));
+    }
+    
+    function carregarDados() {
+      vendas = JSON.parse(localStorage.getItem('letsgo_vendas')) || [];
+      estoque = JSON.parse(localStorage.getItem('letsgo_estoque')) || [];
+      usuarios = JSON.parse(localStorage.getItem('letsgo_usuarios')) || [
+        { username: "admin", password: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" }
+      ];
+      
+      atualizarTabelaVendas();
+      atualizarItensEstoque();
+    }
+    
+    // Event Listeners
+    document.getElementById('produto').addEventListener('change', atualizarResumoVenda);
+    document.getElementById('quantidade').addEventListener('input', atualizarResumoVenda);
+  </script>
+</body>
+</html>
