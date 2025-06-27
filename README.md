@@ -22,9 +22,11 @@ Criar uma aplicação leve, prática e de fácil utilização, voltada para rest
 ##  Como usar
 
 1. Abre o arquivo `feira2.html` no navegador
-2. Insere os itens consumidos
-3. A aplicação calcula automaticamente o total
-4. Imprime ou salva a fatura como PDF
+2. usuario: admin
+3. pass: admin
+4. Insere os itens consumidos
+5. A aplicação calcula automaticamente o total
+6. Imprime ou salva a fatura como PDF
 
 ## Tecnologias usadas
 
